@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Einfacher AI Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      background: #f9f9f9;
+    }
+    header {
+      background: #333;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #f2f2f2;
+    }
+    .message {
+      margin: 8px 0;
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 70%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      word-wrap: break-word;
+    }
+    .user {
+      background: #d1e7dd;
+      margin-left: auto;
+      text-align: right;
+    }
+    .assistant {
+      background: #e2e3e5;
+      margin-right: auto;
+      text-align: left;
+    }
+
+    /* Tipp-Indikator */
+    .typing-indicator {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      height: 20px;
+      padding: 8px 12px;
+      background: #e2e3e5;
+      border-radius: 12px;
+      margin: 8px 0;
+      margin-right: auto;
+    }
+    .typing-indicator span {
+      width: 6px;
+      height: 6px;
+      background: #555;
+      border-radius: 50%;
+      display: inline-block;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes bounce {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: 0.3;
+      }
+      40% {
+        transform: translateY(-6px);
+        opacity: 1;
+      }
+    }
+
+    .composer {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid #ccc;
+      padding: 10px;
+      background: #fff;
+    }
+    textarea {
+      flex: 1;
+      resize: none;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      font-size: 1rem;
+    }
+    textarea:focus {
+      border-color: #333;
+    }
+    .actions {
+      display: flex;
+      margin-top: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .quick-btn, button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      background: #333;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .quick-btn:hover, button:hover {
+      background: #444;
+    }
+    #send {
+      margin-top: 8px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>AI Chat</header>
+  <div id="messages"></div>
+  <div class="composer">
+    <textarea id="input" placeholder="Nachricht eingeben..."></textarea>
+    
+    <!-- Vorschläge -->
+    <div class="actions">
+      <button class="quick-btn" data-text="Wie zieht man Wurzeln?">Wie zieht man Wurzeln?</button>
+      <button class="quick-btn" data-text="Wie rechnet man mit Variablen?">Wie rechnet man mit Variablen?</button>
+      <button class="quick-btn" data-text="Was ist das Additionsverfahren?">Was ist das Additionsverfahren?</button>
+    </div>
+    
+    <button id="send">Senden</button>
+  </div>
+
+  <script>
+    const API_KEY = "AIzaSyD7qb_QG18R2_svvrxyXfyK_MA3WbUZ7_g"; // ❗ API-Key ersetzen
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const quickBtns = document.querySelectorAll('.quick-btn');
+
+    let contents = [];
+
+    function addMessage(role, text){
+      const div = document.createElement('div');
+      div.className = 'message ' + (role === 'user' ? 'user' : 'assistant');
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return div;
+    }
+
+    function addTypingIndicator(){
+      const div = document.createElement('div');
+      div.className = 'typing-indicator';
+      div.innerHTML = '<span></span><span></span><span></span>';
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return div;
+    }
+
+    async function callGemini(){
+      const body = {
+        contents: contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 256
+        }
+      };
+
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if(!res.ok){
+        throw new Error("Fehler: " + res.status);
+      }
+
+      const data = await res.json();
+      const cand = data?.candidates?.[0];
+      const parts = cand?.content?.parts || [];
+      return parts.map(p=>p.text).join('\n').trim();
+    }
+
+    async function send(text = null){
+      text = text || inputEl.value.trim();
+      if(!text) return;
+      inputEl.value = '';
+
+      addMessage('user', text);
+      contents.push({ role: 'user', parts:[{text}] });
+
+      // Tippen-Animation hinzufügen
+      const typingDiv = addTypingIndicator();
+
+      try {
+        const reply = await callGemini();
+
+        // Tippen-Animation entfernen
+        typingDiv.remove();
+
+        addMessage('assistant', reply);
+        contents.push({ role: 'model', parts:[{text:reply}] });
+      } catch(err){
+        typingDiv.remove();
+        addMessage('assistant', 'Fehler: ' + err.message);
+      }
+    }
+
+    sendBtn.addEventListener('click', ()=>send());
+    inputEl.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        send();
+      }
+    });
+
+    // Klick auf Vorschlag-Buttons
+    quickBtns.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const text = btn.getAttribute('data-text');
+        send(text);
+      });
+    });
+  </script>
+</body>
+</html>
