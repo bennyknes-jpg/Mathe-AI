@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot mit Google Gemini API</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #chat-container {
+      width: 500px;
+      height: 600px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    #messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .user {
+      background: #d1e7dd;
+      align-self: flex-end;
+    }
+    .bot {
+      background: #f8d7da;
+      align-self: flex-start;
+    }
+    #input-area {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+    #user-input {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      outline: none;
+    }
+    button {
+      padding: 12px;
+      border: none;
+      background: #0d6efd;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="messages"></div>
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="Frage zum Text stellen...">
+      <button onclick="sendMessage()">Senden</button>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "AIzaSyD7qb_QG18R2_svvrxyXfyK_MA3WbUZ7_g";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+
+    // 👉 Dein Text, der als Basis dient
+const textPrompt = `1. Paris - Le correspondant de Tom est arrivé le samedi 31 octobre. Toute la famille est allée le chercher à la gare de l'Est. Il vient de Weimar en Thuringe. Il s'appelle Claas.
+
+5 La mère et la sœur de Tom font la bise au garçon.
+
+Claas est aussi rouge qu'une tomate. Il a préparé ses premières phrases en français pendant des heures, mais maintenant, tous les mots sont partis ...
+
+Tom lui dit: «Au début, c'est difficile. Tu sais, pour 10 moi, c'est pareil pendant les cours d'allemand!»
+
+2. Claas est là depuis une semaine. Avec Tom, c'est super: ils écoutent de la musique, ils font du skate.
+
+Au lycée, tous les professeurs et les élèves sont sympas avec Claas, mais les journées sont plus 15 longues qu'en Allemagne. En plus, Claas est un peu timide. Alors, il reste avec Tom, tout le temps, partout!
+
+Les parents de Tom rentrent toujours très tard, ils sont moins disponibles que les parents de Claas.
+
+20 La famille ne mange jamais avant 20 h 30. Claas achète des kilos de chips qu'il mange dans sa chambre. Il a un peu le mal du pays. Tom est embêté.
+
+Comment aider Claas? C'est difficile! Aller au ciné, faire un foot ...? Non, Tom a une meilleure idée ..
+
+3. Ganges - Lena est arrivée à Montpellier en TGV à 25
+
+15h 15. Elle est impatiente, mais le voyage n'est pas fini. Ganges est à une heure en voiture et le camping est perdu dans la campagne.
+
+Les Angles, c'est magnifique! La réalité est plus belle que les photos. La famille d'Aurélien est super, 30 ils ont des ânes et des chiens. Ça bouge tout le temps dans cette grande famille. Par contre, pendant la semaine, il faut sortir du lit à 6 heures pour prendre le car du collège. C'est presque la nuit!
+
+4. Après quinze jours, Lena connaît tout le monde
+
+35
+
+au collège. Elle est toujours avec Prune. Les copains d'Aurélien lui demandent: «Alors, t'as perdu ta corres?» A la maison, c'est la même chose. Il est un peu déçu. Est-ce que ça va être encore pire quand il va être à Cologne? Lena ne va pas avoir une minute 40 pour lui! Alors, Aurélien échange des messages avec son cousin à Paris. Pour Tom, c'est le contraire! Son corres ne le quitte jamais.
+
+
+
+
+
+1. Paris, rue des Batignolles, le 15 novembre - Ce matin, il fait froid mais il y a un grand soleil! On sonne chez Tom. Tout le monde est occupé ... sauf
+
+Claas. II va ouvrir.
+
+5 Derrière la porte, tous les copains et copines de Tom sont là avec des casques de vélo sur la tête! Ils vont passer la journée ensemble et visiter Paris. Lola explique le programme de cette journée à Claas:
+
+«On va faire un tour à vélo pour voir la tour Eiffel, les
+
+10 Champs-Elysées, le Louvre ... les plus beaux monuments de la capitale!»
+
+Les jeunes passent ensemble une journée géniale.
+
+Lola fait des photos de Hakim et de Claas au Trocadéro. Ils font les trucs les plus incroyables!
+
+15 2. Un mois plus tard, tout a changé. Claas est très content parce qu'il a passé beaucoup de temps avec Tom et ses copains et copines. En français, c'est plus facile, surtout quand il discute avec Lola. Le temps passe vite! Trop vite même! Il va peut-être revenir 20 en été, chez Hakim cette fois! Pendant un échange, il y a des hauts et des bas, Claas la compris.
+
+3. Ganges, camping des Angles -
+
+Les jeunes ont préparé le repas. Lena a noté une recette dans son carnet de voyage. Maintenant, elle écrit en français! Elle continue.
+
+Encore une journée géniale dans cet endroit super! On a fait une balade avec les ânes et les chiens. Je ne vais jamais oublier ces moments trop bien! Dans trois semaine, c'est le retour à la maison.
+
+JE VEUX RESTER!
+
+Prune va me manquer!
+
+4. Lena demande à son corres: «Auré, tu regardes si jai fait des fautes?»
+
+Aurélien lit. Il a l'air triste et en colère.
+
+«Tu as oublié de mettre un «s» à «semaine» et tu as aussi oublié quelqu'un ...» Lena a compris: «Mais
+
+Aurélien, je n'ai pas fini!»
+
+Elle écrit en très grandes lettres dans son journal:
+
+AURÉLIEN EST LE MEILLEUR CORRES DU MONDE!`;
+
+    const messagesContainer = document.getElementById("messages");
+
+    // 👉 Gesprächshistorie speichern
+    let conversation = [
+      {
+        role: "user",
+        parts: [{
+          text: `Dies ist der Kontext, auf den du dich IMMER beziehen musst:\n\n"${textPrompt}"`
+        }]
+      },
+      {
+        role: "model",
+        parts: [{
+          text: "Verstanden! Ich werde alle deine Fragen auf Basis dieses Textes beantworten."
+        }]
+      }
+    ];
+
+    function addMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+      msg.textContent = text;
+      messagesContainer.appendChild(msg);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const inputField = document.getElementById("user-input");
+      const userMessage = inputField.value.trim();
+      if (!userMessage) return;
+
+      addMessage(userMessage, "user");
+      inputField.value = "";
+
+      // Nutzerfrage in die Historie einfügen
+      conversation.push({
+        role: "user",
+        parts: [{ text: userMessage }]
+      });
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ contents: conversation })
+        });
+
+        const data = await response.json();
+        const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Keine Antwort erhalten.";
+
+        // Antwort anzeigen und in Historie speichern
+        addMessage(botReply, "bot");
+        conversation.push({
+          role: "model",
+          parts: [{ text: botReply }]
+        });
+      } catch (error) {
+        addMessage("Fehler: " + error.message, "bot");
+      }
+    }
+  </script>
+</body>
+</html>
